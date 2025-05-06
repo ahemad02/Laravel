@@ -70,3 +70,21 @@ Route::view('user-forgot-password', 'user-forgot-password');
 Route::post('user-forgot-password', [UserController::class, 'userForgotPassword']);
 
 Route::post('user-set-forgot-password', [UserController::class, 'userSetForgotPassword']);
+
+Route::get('user-login', function () {
+    if (Session::has('user')) {
+        return redirect('/');
+    }
+    return view('user-login');
+});
+
+Route::get('user-signup', function () {
+    if (Session::has('user')) {
+        return redirect('/');
+    }
+    return view('user-signup');
+});
+
+Route::get('user-download-certificate', [UserController::class, 'userDownloadCertificate']);
+
+Route::get('download-certificate', [UserController::class, 'downloadCertificate']);

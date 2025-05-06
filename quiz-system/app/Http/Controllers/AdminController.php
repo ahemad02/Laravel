@@ -41,13 +41,16 @@ class AdminController extends Controller
         if (! $admin) {
             return redirect('admin-login');
         }
-        return view('admin', ['name' => $admin->name]);
+        return view('admin', ['name' => $admin->name, 'totalCategories' => \App\Models\Category::count(),
+            'totalQuizzes'               => \App\Models\Quiz::count(),
+            'totalMcqs'                  => \App\Models\Mcq::count()]);
     }
 
     public function categories()
     {
-        $categories = Category::get();
-        $admin      = Session::get('admin');
+        $categories = Category::paginate(5); // You can change 5 to any number per page
+
+        $admin = Session::get('admin');
         if (! $admin) {
             return redirect('admin-login');
         }
@@ -63,7 +66,7 @@ class AdminController extends Controller
     public function addCategory(Request $request)
     {
         $validation = $request->validate([
-            'category' => 'required | min:3 | max:20 | unique:categories,name',
+            'category' => 'required | min:3 | max:30 | unique:categories,name',
         ], [
             'category.unique' => 'Category Already Exists',
         ]);

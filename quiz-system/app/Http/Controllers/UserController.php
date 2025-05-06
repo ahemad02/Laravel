@@ -14,13 +14,17 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
+use Spatie\Browsershot\Browsershot;
 
 class UserController extends Controller
 {
     public function welcome()
     {
-        $categories = Category::withCount('quizzes')->get();
-        return view('welcome', ['categories' => $categories]);
+        $categories = Category::withCount('quizzes')->orderBy('quizzes_count', 'desc')->take(5)->get();
+
+        $quizData = Quiz::withCount('records')->orderBy('records_count', 'desc')->take(5)->get();
+
+        return view('welcome', ['categories' => $categories, 'quizData' => $quizData]);
     }
 
     public function userQuizList($id, $category)
@@ -55,9 +59,9 @@ class UserController extends Controller
             if (Session::has('quiz-url')) {
                 $url = Session::get('quiz-url');
                 Session::forget('quiz-url');
-                return redirect($url);
+                return redirect($url)->with('message-success', 'User Registered Successfully. Please verify your email address to complete your registration.');
             }
-            return redirect('/');
+            return redirect('/')->with('message-success', 'User Registered Successfully. Please verify your email address to complete your registration.');
         }
 
     }
@@ -106,7 +110,7 @@ class UserController extends Controller
             }
         }
 
-        return "User Not Found, Please Check Your Credentials";
+        return redirect('/user-login')->with('message-error', 'Invalid email or password');
 
     }
 
@@ -214,17 +218,21 @@ class UserController extends Controller
         if ($user) {
             $user->active = 2;
             if ($user->save()) {
-                return redirect('/');
+                return redirect('/')->with('message-success', 'User Verified Successfully');
             }
         }
     }
 
     public function userForgotPassword(Request $request)
     {
+        $userWithEmailExists = User::where('email', $request->email)->count();
+        if ($userWithEmailExists < 1) {
+            return redirect('/user-forgot-password')->with('message-error', 'Email does not exist');
+        }
         $link = Crypt::encryptString($request->email);
         $link = url('/user-forgot-password/' . $link);
         Mail::to($request->email)->send(new UserForgotPassword($link));
-        return redirect('/');
+        return redirect('/')->with('message-success', 'Forgot Password Email sent successfully');
     }
 
     public function userResetPassword($link)
@@ -242,9 +250,31 @@ class UserController extends Controller
         $user           = User::where('email', $request->email)->first();
         $user->password = Hash::make($request->password);
         if ($user->save()) {
-            return redirect('/user-login');
+            return redirect('/user-login')->with('message-success', 'Password Reset Successfully Please Login');
         }
 
+    }
+
+    public function userDownloadCertificate()
+    {
+        $data         = [];
+        $data['quiz'] = str_replace('-', ' ', Session::get('currentQuiz')['quizName']);
+        $data['name'] = Session::get('user')['name'];
+        return view('certificate', ['data' => $data]);
+    }
+
+    public function downloadCertificate()
+    {
+        $data         = [];
+        $data['quiz'] = str_replace('-', ' ', Session::get('currentQuiz')['quizName']);
+        $data['name'] = Session::get('user')['name'];
+        $html         = view('download-certificate', ['data' => $data])->render();
+        return response(
+            Browsershot::html($html)->pdf()
+        )->withHeaders([
+            'Content-Type'        => 'application/pdf',
+            'Content-disposition' => 'attachment;filename=certificate.pdf',
+        ]);
     }
 
 }

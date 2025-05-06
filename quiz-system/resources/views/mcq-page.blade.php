@@ -40,7 +40,7 @@
     <input class="form-radio text-blue-500" type="radio" name="option" id="option3" value="c">
     <span class="text-green-900 pl-2">{{$mcqData->c}}</span>
 </label>
-<label for="option"4 class="flex border p-3 mt-2 rounded-2xl shadow-2xl hover:bg-blue-50 cursor-pointer">
+<label for="option4" class="flex border p-3 mt-2 rounded-2xl shadow-2xl hover:bg-blue-50 cursor-pointer">
     <input class="form-radio text-blue-500" type="radio" name="option" id="option4" value="d">
     <span class="text-green-900 pl-2">{{$mcqData->d}}</span>
 </label>

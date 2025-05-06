@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Categories Page</title>
+    <title>Quiz Search</title>
     @vite('resources/css/app.css')
 </head>
 <body>
@@ -31,7 +31,7 @@
                     <li class="w-110">{{$item->name}}</li>
                     <li class="w-30">{{$item->mcqs_count}}</li>
                     <li class="w-30">
-            <a href="/start-quiz/{{$item->id}}/{{$item->name}}" class="text-green-500 font-bold">
+            <a href="/start-quiz/{{$item->id}}/{{str_replace(' ','-',$item->name)}}" class="text-green-500 font-bold">
            Attempt Quiz
             </a>
         </li>

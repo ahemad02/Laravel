@@ -33,7 +33,7 @@
     </form>
     </div>
 <div class="w-200">
-    <h1 class="text-2xl text-blue-500">Category List</h1>
+    <h1 class="text-2xl text-blue-500 text-center font-bold mt-10 mb-10">Category List</h1>
     <ul class="border border-gray-300">
         <li class="p-2 font-bold">
             <ul class="flex justify-between">
@@ -64,6 +64,9 @@
         </li>
 
         @endforeach
+        <div class="mt-4">
+    {{ $categories->links() }}
+</div>
     </ul>
 </div>
 </div>

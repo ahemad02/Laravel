@@ -6,9 +6,20 @@
 </head>
 <body>
 <x-user-navbar></x-user-navbar>
+
+
+
 <div class=" bg-gray-100 flex items-center justify-center min-h-screen">
 
+
+
     <div class=" bg-white p-8 rounded-2xl  shadow-lg w-full max-w-sm">
+    @if(session('message-error'))
+<div>
+        <p class=" text-red-500 font-bold text-center">{{session('message-error')}}</p>
+        </div>
+    @endif
+
     <h2 class="text-2xl text-center text-gray-800 mb-6 ">Forgot Password  </h2>
     @error('user')
        <div class="text-red-500">{{$message}}</div>
