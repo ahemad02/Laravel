@@ -1,0 +1,19 @@
+=>create laravel application and configure the env create database in mysql and add it in env
+
+=>run this:php artisan make:model Post -mcr
+this will create Model,Migration and Controller
+
+=>define the table structure in migration file and run php artisan migrate
+
+_Add this in routes/web.php_
+
+use App\Http\Controllers\PostController;
+
+Route::resource('posts', PostController::class);
+
+_It will create routes for posts/index,create,store,edit,update,destroy_
+
+=>create controller file and // app/Models/Post.php
+protected $fillable = ['title', 'body'];
+
+create views in resources/views/posts folder index/create/edit
