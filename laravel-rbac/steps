@@ -1,0 +1,113 @@
+// Laravel 12 Role-Based Access Project - Key Files
+
+// 1. Migration: add_role_to_users_table.php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void {
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('role')->default('user');
+        });
+    }
+
+    public function down(): void {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('role');
+        });
+    }
+};
+
+// 2. Model: app/Models/User.php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+
+class User extends Authenticatable
+{
+    use HasApiTokens, HasFactory, Notifiable;
+
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'role',
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+}
+
+// 3. Middleware: app/Http/Middleware/RoleMiddleware.php
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+
+class RoleMiddleware
+{
+    public function handle(Request $request, Closure $next, $role)
+    {
+        if (auth()->check() && auth()->user()->role === $role) {
+            return $next($request);
+        }
+        abort(403, 'Unauthorized');
+    }
+}
+
+// 4. Register Middleware in Kernel: app/Http/Kernel.php
+protected $routeMiddleware = [
+    // ...
+    'role' => \App\Http\Middleware\RoleMiddleware::class,
+];
+
+// 5. Seeder: database/seeders/AdminUserSeeder.php
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use App\Models\User;
+
+class AdminUserSeeder extends Seeder
+{
+    public function run(): void
+    {
+        User::create([
+            'name' => 'Admin',
+            'email' => 'admin@example.com',
+            'password' => bcrypt('password'),
+            'role' => 'admin',
+        ]);
+    }
+}
+
+// 6. Routes: routes/web.php
+use Illuminate\Support\Facades\Route;
+
+Route::get('/', function () {
+    return view('welcome');
+});
+
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('/admin', function () {
+        return "Welcome Admin!";
+    });
+});
+
+Route::middleware(['auth', 'role:user'])->group(function () {
+    Route::get('/user', function () {
+        return "Welcome User!";
+    });
+});
+
+require __DIR__.'/auth.php';

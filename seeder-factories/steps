@@ -1,0 +1,19 @@
+=>make factory php artisan make:factory UserFactory --model=User
+
+=>update definition method in UserFactory
+
+=>in database seeders add UserFactory::new()->count(10)->create() then run php artisan db:seed
+
+=>php artisan make:model Post -mfs
+
+=>update migration file and migrate
+
+=>in factory add
+            'title'=> $this->faker->sentence(),
+            'body'        => $this->faker->paragraph(),
+            'user_id'     => User::factory(), // assigns a new user to each post
+            'category_id' => Category::inRandomOrder()->first()->id ?? Category::factory(),
+
+=>User::factory()->count(10)->hasPosts(5)->create(); make sure relationship is defined in User model
+
+=>update categoty factory , category seeder and add category id in post factory
