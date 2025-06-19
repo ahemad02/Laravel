@@ -165,3 +165,145 @@ class RoleSeeder extends Seeder
 // - Registration + Login via Sanctum
 // - Role assignment using Spatie
 // - Protected route with role-based middleware
+
+<?php
+
+// Laravel 12 + Sanctum + Spatie Permission + CRUD with Role-Based Access
+
+// -- CONTROLLER: PostController --
+// app/Http/Controllers/PostController.php
+
+namespace App\Http\Controllers;
+
+use App\Models\Post;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+
+class PostController extends Controller
+{
+    public function index()
+    {
+        return Post::all();
+    }
+
+    public function store(Request $request)
+    {
+        $this->authorize('create-post');
+
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'content' => 'required|string',
+        ]);
+
+        return Post::create($request->only('title', 'content'));
+    }
+
+    public function show(Post $post)
+    {
+        return $post;
+    }
+
+    public function update(Request $request, Post $post)
+    {
+        $this->authorize('update-post');
+
+        $post->update($request->only('title', 'content'));
+        return $post;
+    }
+
+    public function destroy(Post $post)
+    {
+        $this->authorize('delete-post');
+
+        $post->delete();
+        return response()->json(['message' => 'Deleted successfully']);
+    }
+}
+
+// -- MODEL: Post --
+// app/Models/Post.php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Post extends Model
+{
+    protected $fillable = ['title', 'content'];
+}
+
+// -- MIGRATION: create_posts_table --
+// database/migrations/xxxx_xx_xx_create_posts_table.php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::create('posts', function (Blueprint $table) {
+            $table->id();
+            $table->string('title');
+            $table->text('content');
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('posts');
+    }
+};
+
+// -- SEEDER: PermissionSeeder --
+// database/seeders/PermissionSeeder.php
+
+namespace Database\Seeders;
+
+use Spatie\Permission\Models\Permission;
+use Illuminate\Database\Seeder;
+
+class PermissionSeeder extends Seeder
+{
+    public function run(): void
+    {
+        Permission::create(['name' => 'create-post']);
+        Permission::create(['name' => 'update-post']);
+        Permission::create(['name' => 'delete-post']);
+    }
+}
+
+// Run: php artisan db:seed --class=PermissionSeeder
+
+// Assign permissions to roles in tinker or RoleSeeder
+// $adminRole = Role::findByName('admin');
+// $adminRole->givePermissionTo(['create-post', 'update-post', 'delete-post']);
+
+// -- ROUTES: routes/api.php --
+
+use App\Http\Controllers\PostController;
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::apiResource('posts', PostController::class);
+});
+
+// -- AUTHORIZATION: app/Providers/AuthServiceProvider.php --
+
+use Illuminate\Support\Facades\Gate;
+use App\Models\User;
+
+public function boot(): void
+{
+    $this->registerPolicies();
+
+    Gate::define('create-post', fn(User $user) => $user->hasPermissionTo('create-post'));
+    Gate::define('update-post', fn(User $user) => $user->hasPermissionTo('update-post'));
+    Gate::define('delete-post', fn(User $user) => $user->hasPermissionTo('delete-post'));
+}
+
+// ✅ Final Notes:
+// - Authenticated users with proper permissions can manage posts
+// - Permissions controlled via Spatie Role & Permission system
+// - Use Postman or front-end to test CRUD with token auth
+
