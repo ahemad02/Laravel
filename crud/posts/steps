@@ -17,3 +17,151 @@ _It will create routes for posts/index,create,store,edit,update,destroy_
 protected $fillable = ['title', 'body'];
 
 create views in resources/views/posts folder index/create/edit
+
+this is complete.
+
+//auth santum role bases //
+
+<?php
+
+// This is a simplified Laravel 12 application setup using Sanctum and Spatie Permissions
+
+// 1. Run these commands to set up the project:
+// composer create-project laravel/laravel:^12.0 laravel-sanctum-spatie
+// cd laravel-sanctum-spatie
+// composer require laravel/sanctum
+// composer require spatie/laravel-permission
+// php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"
+// php artisan migrate
+
+// Add Sanctum middleware to app/Http/Kernel.php
+
+'api' => [
+    \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+    'throttle:api',
+    \Illuminate\Routing\Middleware\SubstituteBindings::class,
+],
+
+// In config/auth.php, ensure:
+// 'guards' => [ 'api' => [ 'driver' => 'sanctum', ... ] ]
+
+// 2. User model setup
+// app/Models/User.php
+
+namespace App\Models;
+
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
+
+class User extends Authenticatable
+{
+    use HasApiTokens, Notifiable, HasRoles;
+
+    protected $fillable = [ 'name', 'email', 'password' ];
+    protected $hidden = [ 'password', 'remember_token' ];
+}
+
+// 3. AuthController
+// app/Http/Controllers/AuthController.php
+
+namespace App\Http\Controllers;
+
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
+
+class AuthController extends Controller
+{
+    public function register(Request $request)
+    {
+        $request->validate([
+            'name' => 'required',
+            'email' => 'required|email|unique:users',
+            'password' => 'required|confirmed'
+        ]);
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+        ]);
+
+        $user->assignRole('user');
+
+        return response()->json(['message' => 'User registered']);
+    }
+
+    public function login(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (! $user || ! Hash::check($request->password, $user->password)) {
+            throw ValidationException::withMessages([
+                'email' => ['The provided credentials are incorrect.'],
+            ]);
+        }
+
+        return response()->json([
+            'token' => $user->createToken('api-token')->plainTextToken
+        ]);
+    }
+
+    public function logout(Request $request)
+    {
+        $request->user()->tokens()->delete();
+        return response()->json(['message' => 'Logged out']);
+    }
+}
+
+// 4. Routes setup
+// routes/api.php
+
+use App\Http\Controllers\AuthController;
+use Illuminate\Support\Facades\Route;
+
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
+
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
+
+    Route::get('/admin-data', function () {
+        return ['data' => 'Only for admins'];
+    })->middleware('role:admin');
+});
+
+// 5. Role Seeder (optional)
+// database/seeders/RoleSeeder.php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Role;
+
+class RoleSeeder extends Seeder
+{
+    public function run(): void
+    {
+        Role::create(['name' => 'admin']);
+        Role::create(['name' => 'user']);
+    }
+}
+
+// Run: php artisan db:seed --class=RoleSeeder
+
+// Done! You now have:
+// - Registration + Login via Sanctum
+// - Role assignment using Spatie
+// - Protected route with role-based middleware
